@@ -23,7 +23,8 @@ The tracking demos are displayed on the [Bilibili](https://www.bilibili.com/vide
 - timm==0.9.10
 - pip install transformers==4.12.5 -i https://pypi.tuna.tsinghua.edu.cn/simple/
 
-## Results (AUC) on WebUAV-3M
+## Results 
+### AUC on WebUAV-3M
 |Trackers|Source|Initialize|AUC|Pre.|NPre.|cAUC|mAcc|Param.(M)|FPS|
 |:----|:----|:----|:----|:----|:----|:----|:----|:----|:----|
 |***AVLTrack***|Ours|NL+BB|55.0|70.0|58.8|54.1|55.7|23.944|80.5@GPU|
@@ -31,7 +32,7 @@ The tracking demos are displayed on the [Bilibili](https://www.bilibili.com/vide
 |TDA-Track |IROS’24|BB|46.4|62.5|51.8|45.3|46.8|5.661|134.7@GPU|
 |SmallTrack|TGRS’23|BB|50.1|66.2|55.2|49.2|50.7|29.394|72.5@GPU|
 |Aba-ViTrack|ICCV’23|BB|53.5|68.3|57.0|52.6|54.2|7.979|86.6@GPU|
-## Results (Pre) on DTB70-NLP
+### Pre on DTB70-NLP
 |Trackers|Source|Initialize|Pre. on DTB70-NLP|
 |:----|:----|:----|:----|
 |AVLTrack|Ours|NL+BB|86.3|
@@ -44,7 +45,7 @@ The tracking demos are displayed on the [Bilibili](https://www.bilibili.com/vide
 |DCPT |ICRA’24|BB|84.0|
 |AVTrack |ICML’24|BB|84.3|
 |LiteTrack |ICRA’24|BB|82.5|
-## Results (AUC) on UAV20L-NLP
+### AUC on UAV20L-NLP
 |Trackers|Source|Initialize|AUC on UAV20L-NLP|
 |:----|:----|:----|:----|
 |AVLTrack|Ours|NL+BB|63.9|
@@ -145,7 +146,8 @@ the training set. Therefore, to better evaluate the model generalization, DTB70-
 
 ### Acknowledgement
 The code based on the [OSTrack](https://github.com/botaoye/OSTrack),
-[All-in-One](https://github.com/983632847/All-in-One), and [A-ViT](https://github.com/NVlabs/A-ViT)
+[All-in-One](https://github.com/983632847/All-in-One), and [A-ViT](https://github.com/NVlabs/A-ViT). 
+
 We would like to express our sincere thanks to the contributors.
 
 ### Citation:
