@@ -16,6 +16,7 @@ The models and raw results can be downloaded from [**[BaiduYun]**](https://pan.b
 - torchvision==0.14.0
 - torchaudio==0.13.0
 - timm==0.9.10
+- pip install transformers==4.12.5 -i https://pypi.tuna.tsinghua.edu.cn/simple/
 
 ## Results (AUC)
 |Trackers|Source|Initialize|AUC|Pre.|NPre.|cAUC|mAcc|Param.(M)|FPS|
