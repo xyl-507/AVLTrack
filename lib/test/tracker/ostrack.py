@@ -1,0 +1,257 @@
+import math
+
+from lib.models.ostrack import build_ostrack
+from lib.test.tracker.basetracker import BaseTracker
+import torch
+
+from lib.test.tracker.vis_utils import gen_visualization
+from lib.test.utils.hann import hann2d
+from lib.train.data.processing_utils import sample_target
+# for debug
+import cv2
+import os
+
+from lib.test.tracker.data_utils import Preprocessor
+from lib.utils.box_ops import clip_box
+from lib.utils.ce_utils import generate_mask_cond
+
+######################################################
+from transformers import BertTokenizer, RobertaTokenizerFast
+
+###  OSTrack Model for Evaluation
+class OSTrack(BaseTracker):
+    def __init__(self, params, dataset_name):
+        super(OSTrack, self).__init__(params)
+        network = build_ostrack(params.cfg, training=False)
+        # network.load_state_dict(torch.load(self.params.checkpoint, map_location='cpu')['net'], strict=True)
+        network.load_state_dict(torch.load(self.params.checkpoint, map_location='cpu')['net'], strict=False)
+        self.cfg = params.cfg
+        self.network = network.cuda()
+        self.network.eval()
+        self.preprocessor = Preprocessor()
+        self.state = None
+
+        self.feat_sz = self.cfg.TEST.SEARCH_SIZE // self.cfg.MODEL.BACKBONE.STRIDE
+        # motion constrain
+        self.output_window = hann2d(torch.tensor([self.feat_sz, self.feat_sz]).long(), centered=True).cuda()
+
+        # for debug
+        self.debug = params.debug
+        self.use_visdom = params.debug
+        self.frame_id = 0
+        if self.debug:
+            if not self.use_visdom:
+                self.save_dir = "debug"
+                if not os.path.exists(self.save_dir):
+                    os.makedirs(self.save_dir)
+            else:
+                # self.add_hook()
+                self._init_visdom(None, 1)
+        # for save boxes from all queries
+        self.save_all_boxes = params.save_all_boxes
+        self.z_dict1 = {}
+
+        #####################################################
+        # self.bert_tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True)
+        self.bert_tokenizer = BertTokenizer.from_pretrained("pretrained_models/bert-base-uncased")
+        # self.roberta_tokenizer = RobertaTokenizerFast.from_pretrained('pretrained_networks/roberta-base') # load pretrained RoBERTa Tokenizer
+
+    # def initialize(self, image, info: dict):
+    # def initialize(self, image, language, info: dict) -> dict:
+    def initialize(self, image, language, info: dict):
+        self.language = language
+        # forward the template once
+        z_patch_arr, resize_factor, z_amask_arr = sample_target(image, info['init_bbox'], self.params.template_factor,
+                                                    output_sz=self.params.template_size)
+        self.z_patch_arr = z_patch_arr
+        template = self.preprocessor.process(z_patch_arr, z_amask_arr)
+        with torch.no_grad():
+            self.z_dict1 = template
+
+        self.box_mask_z = None
+        if self.cfg.MODEL.BACKBONE.CE_LOC:
+            template_bbox = self.transform_bbox_to_crop(info['init_bbox'], resize_factor,
+                                                        template.tensors.device).squeeze(1)
+            self.box_mask_z = generate_mask_cond(self.cfg, 1, template.tensors.device, template_bbox)
+
+        # save states
+        self.state = info['init_bbox']
+        self.frame_id = 0
+        if self.save_all_boxes:
+            '''save all predicted boxes'''
+            all_boxes_save = info['init_bbox'] * self.cfg.MODEL.NUM_OBJECT_QUERIES
+            return {"all_boxes": all_boxes_save}
+
+    # def track(self, image, info: dict = None):
+    def track(self, image, i, language, info: dict = None) -> dict:
+    # def track(self, image, language, info: dict = None):
+        H, W, _ = image.shape
+        self.frame_id += 1
+        x_patch_arr, resize_factor, x_amask_arr = sample_target(image, self.state, self.params.search_factor,
+                                                                output_sz=self.params.search_size)  # (x1, y1, w, h)
+        search = self.preprocessor.process(x_patch_arr, x_amask_arr)
+
+        #######################################################
+        ## Add language
+        # with torch.no_grad():
+        nlp_len = 40
+        if language == [] or language is None:
+            phrase_ids = torch.zeros(nlp_len, dtype=torch.long)
+            phrase_attnmask = torch.zeros(nlp_len, dtype=torch.long)
+        else:
+            phrase = language
+            if isinstance(phrase, str):
+                phrase = [phrase]
+            phrase = self.bert_tokenizer.batch_encode_plus(phrase, padding='longest', return_tensors='pt')
+            # phrase = self.roberta_tokenizer.batch_encode_plus(phrase, padding='longest', return_tensors='pt')
+            phrase_ids = phrase['input_ids'].squeeze()
+            phrase_ids = torch.cat([phrase_ids, torch.zeros(nlp_len - phrase_ids.size(0), dtype=torch.long)], dim=0)
+            phrase_attnmask = phrase['attention_mask'].squeeze()
+            phrase_attnmask = torch.cat([phrase_attnmask, torch.zeros(nlp_len - phrase_attnmask.size(0), dtype=torch.long)], dim=0)
+
+        #######################################################
+        ## 'not enough values to unpack (expected 2, got 1)'
+        # 40-->1*40
+        phrase_ids = phrase_ids.unsqueeze(0).cuda()
+        phrase_attnmask = phrase_attnmask.unsqueeze(0).cuda()
+
+        #######################################################
+        with torch.no_grad():
+            x_dict = search
+            # merge the template and the search
+            # run the transformer
+            out_dict = self.network.forward(
+                template=self.z_dict1.tensors, search=x_dict.tensors,
+                phrase_ids=phrase_ids, phrase_attnmask=phrase_attnmask,
+                ce_template_mask=self.box_mask_z)
+            pass
+
+        # add hann windows
+        pred_score_map = out_dict['score_map']
+        response = self.output_window * pred_score_map
+        pred_boxes = self.network.box_head.cal_bbox(response, out_dict['size_map'], out_dict['offset_map'])
+        pred_boxes = pred_boxes.view(-1, 4)
+        # Baseline: Take the mean of all pred boxes as the final result
+        pred_box = (pred_boxes.mean(
+            dim=0) * self.params.search_size / resize_factor).tolist()  # (cx, cy, w, h) [0,1]
+        # get the final box result
+        self.state = clip_box(self.map_box_back(pred_box, resize_factor), H, W, margin=10)
+
+    ######################################################################################################## t-SNE xyl
+        vis_tsne_xyl = False
+        if vis_tsne_xyl:
+            from .cluster_xyl import cluster_kmeans
+            response_ = torch.cat((response, response, response), 1)
+            cluster_kmeans(response_, topk=300, n_components=2, pca=False, openTSNE=True, scikit=False, hgd=False,
+                           title='response')
+    ######################################################################################################## t-SNE xyl
+    ######################################################################################################## Heatmap xyl
+        vis_xyl = False
+        if vis_xyl:
+            print('=================== 请注意，lib/test/tracker/ostrack.py line 141 正在可视化 image {} 热力图 ============'.format(i))
+            print('=================== 还需要修改 lib/test/evaluation/tracker.py out = tracker.track(image, frame_num, info) 传入帧序号 ============')
+            import numpy as np
+            pred_score = response
+            f = pred_score.squeeze().cpu().detach().numpy()
+            # print('f.shape: ', f.shape)  # f.shape:  (10, 25, 25)
+            # f = f.transpose(1, 2, 0)[:, :, 2]  # [:,:,2] 效果好；  9 是原始的  f.shape:  (25, 25)
+
+            img1 = x_patch_arr.squeeze()  # 用 x_patch_arr 作为原图
+            # img1 = img1.permute(1, 2, 0)  # 120， 因为210的图像是反的
+            # print('img1.shape: ', img1.shape)  # 三维的transpose只能有两个参数  # img1.shape:  torch.Size([255, 255, 3])
+            a = np.maximum(f, 0)  # a.shape:  (25, 25)
+
+            # a = np.mean(a, axis=2)  # 对所有通道求平均值
+
+            a /= np.max(a)  # 归一化
+            heatmap = cv2.resize(a, (img1.shape[1], img1.shape[0]))  # img.shape->(255,255,3)
+            heatmap = np.uint8(255 * heatmap)
+
+            # heatmap = 255 - heatmap  # 红蓝颜色反转
+
+            heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+            # print('heatmap.shape: ', heatmap.shape)  # heatmap.shape:  (255, 255, 3)
+            heatmap_sum = heatmap * 0.5 + img1  # 注释掉就没有原图像进行叠加 torch.Size([255, 255, 3])
+            heatmap_sum = np.ascontiguousarray(heatmap_sum)  # TypeError: Expected Ptr<cv::UMat> for argument 'img'
+            img1 = np.ascontiguousarray(img1)  # TypeError: Expected Ptr<cv::UMat> for argument 'img'
+            heatmap = np.ascontiguousarray(heatmap)  # TypeError: Expected Ptr<cv::UMat> for argument 'img'
+            path = '/home/xyl/newdrive/xyl-code2/All-in-One-ACMMM2023/output/vis'
+            path_heatmap = path + '/heatmap'
+            path_img_orign = path + '/img_orign'
+            path_heatmap_img = path + '/heatmap+img'
+            if not os.path.exists(path_heatmap):
+                os.mkdir(path_heatmap)
+            if not os.path.exists(path_img_orign):
+                os.mkdir(path_img_orign)
+            if not os.path.exists(path_heatmap_img):
+                os.mkdir(path_heatmap_img)
+            cv2.imwrite('{}/heatmap_{:06d}.jpg'.format(path_heatmap, i), heatmap)
+            cv2.imwrite('{}/img_orign_{:06d}.jpg'.format(path_img_orign, i), img1)
+            cv2.imwrite('{}/heatmap+img_{:06d}.jpg'.format(path_heatmap_img, i), heatmap_sum)
+    ######################################################################################################## Heatmap xyl
+        # for debug
+        if self.debug:
+            if not self.use_visdom:
+                x1, y1, w, h = self.state
+                image_BGR = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+                cv2.rectangle(image_BGR, (int(x1),int(y1)), (int(x1+w),int(y1+h)), color=(0,0,255), thickness=2)
+                save_path = os.path.join(self.save_dir, "%04d.jpg" % self.frame_id)
+                cv2.imwrite(save_path, image_BGR)
+            else:
+                self.visdom.register((image, info['gt_bbox'].tolist(), self.state), 'Tracking', 1, 'Tracking')
+
+                self.visdom.register(torch.from_numpy(x_patch_arr).permute(2, 0, 1), 'image', 1, 'search_region')
+                self.visdom.register(torch.from_numpy(self.z_patch_arr).permute(2, 0, 1), 'image', 1, 'template')
+                self.visdom.register(pred_score_map.view(self.feat_sz, self.feat_sz), 'heatmap', 1, 'score_map')
+                self.visdom.register((pred_score_map * self.output_window).view(self.feat_sz, self.feat_sz), 'heatmap', 1, 'score_map_hann')
+
+                if 'removed_indexes_s' in out_dict and out_dict['removed_indexes_s']:
+                    removed_indexes_s = out_dict['removed_indexes_s']
+                    removed_indexes_s = [removed_indexes_s_i.cpu().numpy() for removed_indexes_s_i in removed_indexes_s]
+                    masked_search = gen_visualization(x_patch_arr, removed_indexes_s)
+                    self.visdom.register(torch.from_numpy(masked_search).permute(2, 0, 1), 'image', 1, 'masked_search')
+
+                while self.pause_mode:
+                    if self.step:
+                        self.step = False
+                        break
+
+        if self.save_all_boxes:
+            '''save all predictions'''
+            all_boxes = self.map_box_back_batch(pred_boxes * self.params.search_size / resize_factor, resize_factor)
+            all_boxes_save = all_boxes.view(-1).tolist()  # (4N, )
+            return {"target_bbox": self.state,
+                    "all_boxes": all_boxes_save}
+        else:
+            return {"target_bbox": self.state}
+
+    def map_box_back(self, pred_box: list, resize_factor: float):
+        cx_prev, cy_prev = self.state[0] + 0.5 * self.state[2], self.state[1] + 0.5 * self.state[3]
+        cx, cy, w, h = pred_box
+        half_side = 0.5 * self.params.search_size / resize_factor
+        cx_real = cx + (cx_prev - half_side)
+        cy_real = cy + (cy_prev - half_side)
+        return [cx_real - 0.5 * w, cy_real - 0.5 * h, w, h]
+
+    def map_box_back_batch(self, pred_box: torch.Tensor, resize_factor: float):
+        cx_prev, cy_prev = self.state[0] + 0.5 * self.state[2], self.state[1] + 0.5 * self.state[3]
+        cx, cy, w, h = pred_box.unbind(-1) # (N,4) --> (N,)
+        half_side = 0.5 * self.params.search_size / resize_factor
+        cx_real = cx + (cx_prev - half_side)
+        cy_real = cy + (cy_prev - half_side)
+        return torch.stack([cx_real - 0.5 * w, cy_real - 0.5 * h, w, h], dim=-1)
+
+    def add_hook(self):
+        conv_features, enc_attn_weights, dec_attn_weights = [], [], []
+
+        for i in range(12):
+            self.network.backbone.blocks[i].attn.register_forward_hook(
+                # lambda self, input, output: enc_attn_weights.append(output[1])
+                lambda self, input, output: enc_attn_weights.append(output[1])
+            )
+
+        self.enc_attn_weights = enc_attn_weights
+
+
+def get_tracker_class():
+    return OSTrack

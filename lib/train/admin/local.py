@@ -1,0 +1,27 @@
+class EnvironmentSettings:
+    def __init__(self):
+        self.workspace_dir = '/public/workspace/xyl/All-in-One-main-ACMMM2023'    # Base directory for saving network checkpoints.
+        self.tensorboard_dir = '/public/workspace/xyl/All-in-One-main-ACMMM2023/tensorboard'    # Directory for tensorboard files.
+        self.pretrained_networks = '/public/workspace/xyl/All-in-One-main-ACMMM2023/pretrained_networks'
+        self.lasot_dir = '/public/datasets/lasot'
+        self.got10k_dir = '/public/datasets/got10k/train'
+        self.got10k_val_dir = '/public/datasets/got10k/val'
+        self.lasot_lmdb_dir = '/public/datasets/lasot_lmdb'
+        self.got10k_lmdb_dir = '/public/datasets/got10k_lmdb'
+        self.trackingnet_dir = '/public/datasets/trackingnet'
+        self.trackingnet_lmdb_dir = '/public/datasets/trackingnet_lmdb'
+        self.coco_dir = '/public/datasets/coco'
+        self.coco_lmdb_dir = '/public/datasets/coco_lmdb'
+        self.refcoco_dir = '/public/datasets/refCOCO'
+        self.lvis_dir = ''
+        self.sbd_dir = ''
+        self.imagenet_dir = '/public/datasets/vid'
+        self.imagenet_lmdb_dir = '/public/datasets/vid_lmdb'
+        self.imagenetdet_dir = ''
+        self.ecssd_dir = ''
+        self.hkuis_dir = ''
+        self.msra10k_dir = ''
+        self.davis_dir = ''
+        self.youtubevos_dir = ''
+        self.tnl2k_dir = '/public/datasets/TNL2K/train'
+        self.otb99lang_dir = '/public/datasets/OTB_sentences'
