@@ -10,6 +10,11 @@ AVLTrack: Dynamic Sparse Learning for Aerial Vision-Language Tracking
 
 The models and raw results can be downloaded from [**[BaiduYun]**](https://pan.baidu.com/s/1sHjaELBFMh8KBjOwAmh6AQ?pwd=43xv).
 
+The tracking demos are displayed on the [Bilibili](https://www.bilibili.com/video/BV1hT9QYBEKU/).
+
+### Proposed modules
+- `DSL` and `MLP` in [backbone](https://github.com/xyl-507/AVLTrack/blob/main/lib/models/ostrack/AbaViT_trans_tksa_multi.py)
+
 ## Requirements
 - python==3.8.18
 - torch==1.13.0
@@ -18,7 +23,7 @@ The models and raw results can be downloaded from [**[BaiduYun]**](https://pan.b
 - timm==0.9.10
 - pip install transformers==4.12.5 -i https://pypi.tuna.tsinghua.edu.cn/simple/
 
-## Results (AUC)
+## Results (AUC) on WebUAV-3M
 |Trackers|Source|Initialize|AUC|Pre.|NPre.|cAUC|mAcc|Param.(M)|FPS|
 |:----|:----|:----|:----|:----|:----|:----|:----|:----|:----|
 |***AVLTrack***|Ours|NL+BB|55.0|70.0|58.8|54.1|55.7|23.944|80.5@GPU|
@@ -26,9 +31,37 @@ The models and raw results can be downloaded from [**[BaiduYun]**](https://pan.b
 |TDA-Track |IROS’24|BB|46.4|62.5|51.8|45.3|46.8|5.661|134.7@GPU|
 |SmallTrack|TGRS’23|BB|50.1|66.2|55.2|49.2|50.7|29.394|72.5@GPU|
 |Aba-ViTrack|ICCV’23|BB|53.5|68.3|57.0|52.6|54.2|7.979|86.6@GPU|
-
+## Results (Pre) on DTB70-NLP
+|Trackers|Source|Initialize|Pre. on DTB70-NLP|
+|:----|:----|:----|:----|
+|AVLTrack|Ours|NL+BB|86.3|
+|MixFormerV2|NeurIPS’23|BB|84.1|
+|SeqTrack-B384 |CVPR’23|BB|85.9|
+|MixFormer-CvT |TPAMI’24|BB|82.7|
+|SmallTrack |TGRS’23|BB|85.8|
+|Aba-ViTrack |ICCV’23|BB|85.9|
+|TDA-Track |IROS’24|BB|80.2|
+|DCPT |ICRA’24|BB|84.0|
+|AVTrack |ICML’24|BB|84.3|
+|LiteTrack |ICRA’24|BB|82.5|
+## Results (AUC) on UAV20L-NLP
+|Trackers|Source|Initialize|AUC on UAV20L-NLP|
+|:----|:----|:----|:----|
+|AVLTrack|Ours|NL+BB|63.9|
+|E.T.Track |WACV’23|BB|60.0|
+|TaMOs-Swin-B |WACV’24|BB|61.2|
+|ACM-BAN |TPAMI’24|BB|56.0|
+|HiT-Small |ICCV’23|BB|63.0|
+|Aba-ViTrack |ICCV’23|BB|63.5|
+|PRL-Track |IROS’24|BB|52.0|
+|TDA-Track |IROS’24|BB|50.6|
+|SAM-DA-Base |ICARM’24|BB|55.9|
+|CGDenoiser |IROS’24|BB|54.7|
+|QRDT |TIM’24|BB|55.8|
+|DaDiff-GAT |IROS’24|BB|57.3|
 
 It should be noted that the above pretrained model is trained on an Ubuntu 18.04 server with multiple NVIDIA RTX A100 GPUs. For WebUAV-3M, we recommend the official [evaluation toolkit](https://github.com/983632847/WebUAV-3M).
+
 ## Set project paths
 Run the following command to set paths for this project
 ```
