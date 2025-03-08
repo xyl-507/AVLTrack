@@ -29,34 +29,72 @@ The models and raw results can be downloaded from [**[BaiduYun]**](https://pan.b
 
 
 It should be noted that the above pretrained model is trained on an Ubuntu 18.04 server with multiple NVIDIA RTX A100 GPUs. For WebUAV-3M, we recommend the official [evaluation toolkit](https://github.com/983632847/WebUAV-3M).
-
-## Evaluation
-Download the model [AVLTrack](https://pan.baidu.com/s/1sHjaELBFMh8KBjOwAmh6AQ?pwd=43xv), extraction code: `43xv`. Add the model to `$PROJECT_ROOT$/AVLTrack/output/checkpoints/train/`.
+## Set project paths
+Run the following command to set paths for this project
 ```
-python tracking/test.py --dataset webuav3m --threads 8
-python tracking/analysis_results.py
+python tracking/create_default_local_file.py --workspace_dir . --data_dir ./data --save_dir ./output
 ```
-
-Before evaluation, please make sure the data path in [***local.py***](./lib/test/evaluation/local.py) is correct.
+After running this command, you can also modify paths by editing these two files
+```
+lib/train/admin/local.py  # paths about training
+lib/test/evaluation/local.py  # paths about testing
+```
+## Data Preparation
+Put the tracking datasets in ./data. It should look like this:
+   ```
+   ${PROJECT_ROOT}
+    -- data
+        -- lasot
+            |-- airplane
+            |-- basketball
+            |-- bear
+            ...
+        -- got10k
+            |-- test
+            |-- train
+            |-- val
+        -- coco
+            |-- annotations
+            |-- images
+        -- trackingnet
+            |-- TRAIN_0
+            |-- TRAIN_1
+            ...
+            |-- TRAIN_11
+            |-- TEST
+   ```
 
 ## Training
 Download pre-trained [MAE ViT-Base weights](https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_base.pth) and put it to `$PROJECT_ROOT$/AVLTrack/lib/models/pretrained_models`.
 
 1.Training with one GPU.
 ```
-cd /$PROJECT_ROOT$/AVLTrack/lib/train
-python run_training_all_in_one.py --save_dir ./output
+cd /$PROJECT_ROOT$/AVLTrack
+CUDA_VISIBLE_DEVICES=0 python tracking/train.py --script ostrack --config abavit_patch16_224_ep300 --save_dir ./output --mode single --nproc_per_node 1
 ```
 
 2.Training with multiple GPUs.
 ```
 cd /$PROJECT_ROOT$/AVLTrack
-python tracking/train.py --save_dir ./output --mode multiple --nproc_per_node 8
+CUDA_VISIBLE_DEVICES=0,1 python tracking/train.py --script ostrack --config abavit_patch16_224_ep300 --save_dir ./output --mode multiple --nproc_per_node 2
 ```
 
 Before training, please make sure the data path in [***local.py***](./lib/train/admin/local.py) is correct.
 
+## Evaluation
+Download the model [AVLTrack](https://pan.baidu.com/s/1sHjaELBFMh8KBjOwAmh6AQ?pwd=43xv), extraction code: `43xv`. Add the model to `$PROJECT_ROOT$/AVLTrack/output/checkpoints/train/`.
+```
+python tracking/test.py --tracker_name ostrack --tracker_param abavit_patch16_224_ep300 --dataset webuav3m --threads 2 --num_gpus 2
+python tracking/analysis_results.py
 
+```
+
+Before evaluation, please make sure the data path in [***local.py***](./lib/test/evaluation/local.py) is correct.
+
+## Test FLOPs, and Speed
+```
+python tracking/profile_model.py --script ostrack --config levit_256_32x4_ep300
+```
 
 # UAV vision-language tracking dataset: DTB70-NLP, UAV20L-NLP, UAVDT-NLP, and VisDrone2019-SOT-test-dev-NLP
 
@@ -85,9 +123,6 @@ If you find this work useful for your research, please cite the following papers
   journal={IEEE Transactions on Circuits and Systems for Video Technology}, 
   title={AVLTrack: Dynamic Sparse Learning for Aerial Vision-Language Tracking}, 
   year={2025},
-  volume={61},
-  pages={1-15},
-  keywords={Target tracking;Object tracking;Wavelet transforms;Feature extraction;Task analysis;Remote sensing;Visualization;Aerial tracking;graph enhanced classification;remote sensing;Siamese neural network;wavelet pooling layer (WPL)},
   doi={10.1109/TCSVT.2025.3549953}}
 ```
 If you have any questions about this work, please contact with me via xyl_507@outlook.com
