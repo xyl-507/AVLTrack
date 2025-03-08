@@ -20,11 +20,11 @@ The models and raw results can be downloaded from [**[BaiduYun]**](https://pan.b
 ## Results (AUC)
 |Trackers|Source|Initialize|AUC|Pre.|NPre.|cAUC|mAcc|Param.(M)|FPS|
 |:----|:----|:----|:----|:----|:----|:----|:----|:----|:----|
-|AVLTrack|Ours|NL+BB|55.0|70.0|58.8|54.1|55.7|23.944|80.5@GPU|
+|***AVLTrack***|Ours|NL+BB|55.0|70.0|58.8|54.1|55.7|23.944|80.5@GPU|
 |PRL-Track |IROS’24|BB|46.3|62.3|50.8|45.2|46.7|13.377|174.9@GPU|
 |TDA-Track |IROS’24|BB|46.4|62.5|51.8|45.3|46.8|5.661|134.7@GPU|
 |SmallTrack|TGRS’23|BB|50.1|66.2|55.2|49.2|50.7|29.394|72.5@GPU|
-|Aba-ViTrack*|ICCV’23|BB|53.5|68.3|57.0|52.6|54.2|7.979|86.6@GPU|
+|Aba-ViTrack|ICCV’23|BB|53.5|68.3|57.0|52.6|54.2|7.979|86.6@GPU|
 
 
 It should be noted that the above pretrained model is trained on an Ubuntu 18.04 server with multiple NVIDIA RTX A100 GPUs. For WebUAV-3M, we recommend the official [evaluation toolkit](https://github.com/983632847/WebUAV-3M).
