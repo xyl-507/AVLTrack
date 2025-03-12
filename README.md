@@ -8,6 +8,8 @@ AVLTrack: Dynamic Sparse Learning for Aerial Vision-Language Tracking
 
 ![image](https://github.com/xyl-507/AVLTrack/blob/main/figs/framework.jpg)
 
+The paper can be downloaded from [IEEE Xplore](https://ieeexplore.ieee.org/document/10922151)
+
 The models and raw results can be downloaded from [**[GitHub]**](https://github.com/xyl-507/AVLTrack/releases/tag/model_results) and [**[BaiduYun]**](https://pan.baidu.com/s/1sHjaELBFMh8KBjOwAmh6AQ?pwd=43xv).
 
 The tracking demos are displayed on the [Bilibili](https://www.bilibili.com/video/BV1hT9QYBEKU/).
