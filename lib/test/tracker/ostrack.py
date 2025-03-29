@@ -137,58 +137,6 @@ class OSTrack(BaseTracker):
         # get the final box result
         self.state = clip_box(self.map_box_back(pred_box, resize_factor), H, W, margin=10)
 
-    ######################################################################################################## t-SNE xyl
-        vis_tsne_xyl = False
-        if vis_tsne_xyl:
-            from .cluster_xyl import cluster_kmeans
-            response_ = torch.cat((response, response, response), 1)
-            cluster_kmeans(response_, topk=300, n_components=2, pca=False, openTSNE=True, scikit=False, hgd=False,
-                           title='response')
-    ######################################################################################################## t-SNE xyl
-    ######################################################################################################## Heatmap xyl
-        vis_xyl = False
-        if vis_xyl:
-            print('=================== 请注意，lib/test/tracker/ostrack.py line 141 正在可视化 image {} 热力图 ============'.format(i))
-            print('=================== 还需要修改 lib/test/evaluation/tracker.py out = tracker.track(image, frame_num, info) 传入帧序号 ============')
-            import numpy as np
-            pred_score = response
-            f = pred_score.squeeze().cpu().detach().numpy()
-            # print('f.shape: ', f.shape)  # f.shape:  (10, 25, 25)
-            # f = f.transpose(1, 2, 0)[:, :, 2]  # [:,:,2] 效果好；  9 是原始的  f.shape:  (25, 25)
-
-            img1 = x_patch_arr.squeeze()  # 用 x_patch_arr 作为原图
-            # img1 = img1.permute(1, 2, 0)  # 120， 因为210的图像是反的
-            # print('img1.shape: ', img1.shape)  # 三维的transpose只能有两个参数  # img1.shape:  torch.Size([255, 255, 3])
-            a = np.maximum(f, 0)  # a.shape:  (25, 25)
-
-            # a = np.mean(a, axis=2)  # 对所有通道求平均值
-
-            a /= np.max(a)  # 归一化
-            heatmap = cv2.resize(a, (img1.shape[1], img1.shape[0]))  # img.shape->(255,255,3)
-            heatmap = np.uint8(255 * heatmap)
-
-            # heatmap = 255 - heatmap  # 红蓝颜色反转
-
-            heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-            # print('heatmap.shape: ', heatmap.shape)  # heatmap.shape:  (255, 255, 3)
-            heatmap_sum = heatmap * 0.5 + img1  # 注释掉就没有原图像进行叠加 torch.Size([255, 255, 3])
-            heatmap_sum = np.ascontiguousarray(heatmap_sum)  # TypeError: Expected Ptr<cv::UMat> for argument 'img'
-            img1 = np.ascontiguousarray(img1)  # TypeError: Expected Ptr<cv::UMat> for argument 'img'
-            heatmap = np.ascontiguousarray(heatmap)  # TypeError: Expected Ptr<cv::UMat> for argument 'img'
-            path = '/home/xyl/newdrive/xyl-code2/All-in-One-ACMMM2023/output/vis'
-            path_heatmap = path + '/heatmap'
-            path_img_orign = path + '/img_orign'
-            path_heatmap_img = path + '/heatmap+img'
-            if not os.path.exists(path_heatmap):
-                os.mkdir(path_heatmap)
-            if not os.path.exists(path_img_orign):
-                os.mkdir(path_img_orign)
-            if not os.path.exists(path_heatmap_img):
-                os.mkdir(path_heatmap_img)
-            cv2.imwrite('{}/heatmap_{:06d}.jpg'.format(path_heatmap, i), heatmap)
-            cv2.imwrite('{}/img_orign_{:06d}.jpg'.format(path_img_orign, i), img1)
-            cv2.imwrite('{}/heatmap+img_{:06d}.jpg'.format(path_heatmap_img, i), heatmap_sum)
-    ######################################################################################################## Heatmap xyl
         # for debug
         if self.debug:
             if not self.use_visdom:

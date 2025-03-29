@@ -139,11 +139,11 @@ tracking datasets DTB70-NLP, UAV20L-NLP, UAVDT-NLP, and VisDrone2019-SOT-test-de
 dataset DTB70, UAV20L, UAVDT, and VisDrone2019-SOT-test-dev. Note that DTB70-NLP and UAV20L-NLP are non-overlapping with
 the training set. Therefore, to better evaluate the model generalization, DTB70-NLP and UAV20L-NLP are only used for testing.
 
-|Dataset|#Video|#Total frame|#Mean frame|#Mean language|
-|:----|:----|:----|:----|:----|
-|WebUAV-3M|780|3.3 M|710|14.4|
-|DTB70-NLP|70|15.8 K|225|12.6|
-|UAV20L-NLP|20|58.6 K|2934|11.5|
+|Dataset|#Video|#Total frame|#Mean frame|#Mean language|Download|
+|:----|:----|:----|:----|:----|:----|
+|WebUAV-3M|780|3.3 M|710|14.4|[link](https://github.com/983632847/WebUAV-3M)
+|DTB70-NLP|70|15.8 K|225|12.6|[link](https://pan.baidu.com/s/1sHjaELBFMh8KBjOwAmh6AQ?pwd=43xv)
+|UAV20L-NLP|20|58.6 K|2934|11.5|[link](https://pan.baidu.com/s/1sHjaELBFMh8KBjOwAmh6AQ?pwd=43xv)
 
 
 ### Acknowledgement
