@@ -76,6 +76,12 @@ lib/train/admin/local.py  # paths about training
 lib/test/evaluation/local.py  # paths about testing
 ```
 ## Data Preparation
+Training datasets download
+- LaSOT: [[Link]](http://vision.cs.stonybrook.edu/~lasot/)
+- GOT-10k: : [[Link]](http://got-10k.aitestunion.com/)
+- COCO: : [[Link]](https://cocodataset.org/#home)
+- GOT-10k: : [[Link]](https://github.com/SilvioGiancola/TrackingNet-devkit)
+
 Put the tracking datasets in ./data. It should look like this:
    ```
    ${PROJECT_ROOT}
