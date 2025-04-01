@@ -107,7 +107,8 @@ Put the tracking datasets in ./data. It should look like this:
    ```
 
 ## Training
-Download pre-trained [MAE ViT-Base weights](https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_base.pth) and put it to `$PROJECT_ROOT$/AVLTrack/lib/models/pretrained_models`.
+- Download pre-trained [[MAE ViT-Base weights]](https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_base.pth) and put it to `$PROJECT_ROOT$/AVLTrack/lib/models/pretrained_models`.
+- Download pre-trained [[bert-base-uncased weights]](https://pan.baidu.com/s/1LLemKSXPhNRV_JBlEasM-Q?pwd=f5fg) and put them to `$PROJECT_ROOT$/AVLTrack/lib/models/pretrained_models/bert-base-uncased`.
 
 1.Training with one GPU.
 ```
