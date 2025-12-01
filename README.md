@@ -127,7 +127,7 @@ Before training, please make sure the data path in [***local.py***](./lib/train/
 ## Evaluation
 Download the model [AVLTrack](https://pan.baidu.com/s/1sHjaELBFMh8KBjOwAmh6AQ?pwd=43xv), extraction code: `43xv`. Add the model to `$PROJECT_ROOT$/AVLTrack/output/checkpoints/train/`.
 ```
-python tracking/test.py --tracker_name ostrack --tracker_param abavit_patch16_224_ep300 --dataset webuav3m --threads 2 --num_gpus 2
+python tracking/test.py --tracker_name ostrack --tracker_param abavit_patch16_224_ep297 --dataset webuav3m --threads 2 --num_gpus 2
 python tracking/analysis_results.py
 
 ```
